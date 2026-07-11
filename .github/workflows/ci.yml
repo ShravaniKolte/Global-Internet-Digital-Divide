@@ -1,0 +1,39 @@
+name: Digital Divide Tracker CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run tests
+        run: |
+          pytest tests/ -v
+
+      - name: Build Docker image
+        run: |
+          docker build -t digital-divide-app .
+
+      - name: Test Docker container starts correctly
+        run: |
+          docker run -d -p 8000:8000 --name test-container digital-divide-app
+          sleep 5
+          curl --fail http://localhost:8000/health || exit 1
+          docker stop test-container
